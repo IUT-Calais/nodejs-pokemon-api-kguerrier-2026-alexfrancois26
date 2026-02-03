@@ -11,7 +11,7 @@
     "db:reset": "prisma migrate reset --force",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:seed":"prisma seed",
+    "db:seed": "prisma seed",
     "db:studio": "prisma studio",
     "test": "jest --runInBand",
     "test:coverage": "jest --coverage --runInBand"
@@ -33,6 +33,7 @@
     "bcrypt": "^5.1.1",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
+    "npx": "^10.2.2",
     "swagger-ui-express": "^5.0.1",
     "yamljs": "^0.3.0"
   },
