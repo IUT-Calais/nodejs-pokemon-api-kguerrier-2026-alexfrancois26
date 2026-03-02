@@ -3,7 +3,7 @@ import { get } from 'http';
 import { getPokemonCards, getPokemonCardId, createPokemonCard, editPokemonCard, deletedPokemonCard } from './pokemonCard.controller';
 import { create } from 'domain';
 import { verify } from 'crypto';
-import { verifyJWT } from './middleware';
+import { verifyJWT } from '../common/auth.middleware';
 
 
 export const pokemonCardRouter = Router();
