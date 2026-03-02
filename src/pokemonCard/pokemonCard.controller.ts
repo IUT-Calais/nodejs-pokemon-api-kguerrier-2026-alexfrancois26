@@ -34,6 +34,11 @@ export const getPokemonCardId = async (req: Request, res: Response) => {
 export const createPokemonCard = async (req: Request, res: Response) => {
     const { name, pokedexId, typeId, lifePoints, size, weight, imageUrl } = req.body;
     try {
+        if (!name || !pokedexId || !typeId || !lifePoints) {
+            res.status(400).send({ error: "Les champs name, pokedexId, typeId et lifePoints sont obligatoires" });
+            return;
+        }
+
         const type = await prisma.type.findUnique({
             where: { id: typeId }
         });
@@ -43,11 +48,7 @@ export const createPokemonCard = async (req: Request, res: Response) => {
         const pokedexIdPoke = await prisma.pokemonCard.findUnique({
             where: { pokedexId: pokedexId }
         });
-        if (!name || !pokedexId || !typeId || !lifePoints) {
-            res.status(400).send({ error: "Les champs name, pokedexId, typeId et lifePoints sont obligatoires" });
-            return;
-        }
-        else if (!type) {
+        if (!type) {
             res.status(400).send({ error: "Le type n'existe pas" });
             return;
         }
