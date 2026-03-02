@@ -193,8 +193,8 @@ L'endpoint `POST:/users/login` prendra en paramètre un objet JSON contenant les
 Vous traiterez les codes http suivants:
 
 - `200 Created` : Si la connexion a réussi
-- `404 Not Found` : Si l'utilisateur n'existe pas en base de données // pas faire mettre 401
-- `400 Bad Request` : Si le mot de passe ne correspond pas à l'utilisateur // pas faire mettre 401
+- `401 Not Found` : Si l'utilisateur n'existe pas en base de données 
+- `401 Bad Request` : Si le mot de passe ne correspond pas à l'utilisateur 
 
 > Nous utilons ici une méthode `POST` et non `GET` car il s'agit d'un point de vue applicatif de la création d'une session utilisateur. Dans le cas d'une création le `POST` est donc plus logique.
 

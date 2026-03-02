@@ -31,3 +31,19 @@ export const createUser = async (req : Request, res : Response) => {
         res.status(500).send({ error : "Erreur lors de la création de l'utilisateur" });
     }
 }
+
+export const loginUser = async ( req : Request, res : Response) => {
+    try {
+        const { email, password } = req.body;
+        if (!await prisma.user.findUnique({
+            where : {
+                email:email,
+            }
+        })) {
+            res.status(404).send({error : "Utilisateur non trouvé" });
+            return;
+        }
+    } catch (error) {
+        
+    }
+}
