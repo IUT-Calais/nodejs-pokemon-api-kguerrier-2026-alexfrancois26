@@ -13,7 +13,7 @@ vi.mock('../src/client', () => ({
 
 
 // Mock du middleware d'authentification
-vi.mock('../src/common/jwt.middleware', () => ({
+vi.mock('../src/common/auth.middleware', () => ({
     verifyJWT: vi.fn((req, res, next) => {
         // Simule un utilisateur authentifié
         req.userId = 1
