@@ -59,6 +59,42 @@ describe('PokemonCard API', () => {
 
     });
 
+    it('should return 400 if required fields are missing', async () => {
+      const incompleteInput = { name: 'Pikachu' };
+      const response = await request(app)
+        .post('/pokemon-cards')
+        .set('Authorization', 'Bearer test-token')
+        .send(incompleteInput);
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: 'Les champs name, pokedexId, typeId et lifePoints sont obligatoires' });
+    });
+
+    it('should return 400 if type does not exist', async () => {
+      const createInput = { name: 'Pikachu', pokedexId: 25, typeId: 999, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      prismaMock.type.findUnique.mockResolvedValue(null);
+
+      const response = await request(app)
+        .post('/pokemon-cards')
+        .set('Authorization', 'Bearer test-token')
+        .send(createInput);
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: 'Le type n\'existe pas' });
+    });
+
+    it('should return 400 if name or pokedexId already exists', async () => {
+      const createInput = { name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      prismaMock.type.findUnique.mockResolvedValue({ id: 1, name: 'Electric' });
+      prismaMock.pokemonCard.findUnique.mockResolvedValue({ id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' });
+
+      const response = await request(app)
+        .post('/pokemon-cards')
+        .set('Authorization', 'Bearer test-token')
+        .send(createInput);
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: 'Le nom ou le pokedexId de la carte Pokémon existe déjà' });
+     });
+
   });
 
   describe('PATCH /pokemon-cards/:pokemonCardId', () => {
@@ -78,10 +114,54 @@ describe('PokemonCard API', () => {
       expect(response.body).toEqual(updatedPokemonCard);
     });
 
+    it('should return 400 if PokemonCard does not exist', async () => {
+      prismaMock.pokemonCard.findUnique.mockResolvedValue(null);
+      const updateInput = { lifePoints: 40 };
+
+      const response = await request(app)
+        .patch('/pokemon-cards/999')
+        .set('Authorization', 'Bearer test-token')
+        .send(updateInput);
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: "La carte Pokémon n'existe pas" });
+    });
+
+    it('should return 400 if type does not exist', async () => {
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const updateInput = { typeId: 999 };
+
+      prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
+      prismaMock.type.findUnique.mockResolvedValue(null);
+
+      const response = await request(app)
+        .patch('/pokemon-cards/1')
+        .set('Authorization', 'Bearer test-token')
+        .send(updateInput);
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: "Le type n'existe pas" });
+    });
   });
 
   describe('DELETE /pokemon-cards/:pokemonCardId', () => {
     it('should delete a PokemonCard', async () => {
+      const deletedCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      
+      prismaMock.pokemonCard.delete.mockResolvedValue(deletedCard);
+
+      const response = await request(app)
+        .delete('/pokemon-cards/1')
+        .set('Authorization', 'Bearer test-token');
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(deletedCard);
+    });
+
+    it('should return 500 if PokemonCard to delete is not found', async () => {
+      prismaMock.pokemonCard.delete.mockRejectedValue(new Error('Record to delete does not exist'));
+
+      const response = await request(app)
+        .delete('/pokemon-cards/999')
+        .set('Authorization', 'Bearer test-token');
+      expect(response.status).toBe(500);
     });
   });
 });
