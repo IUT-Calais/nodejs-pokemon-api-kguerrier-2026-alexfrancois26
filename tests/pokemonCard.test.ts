@@ -1,11 +1,16 @@
 import request from 'supertest';
 import { app } from '../src';
-import { prismaMock } from './jest.setup';
+import { prismaMock } from './vitest.setup';
 
 describe('PokemonCard API', () => {
   describe('GET /pokemon-cards', () => {
     it('should fetch all PokemonCards', async () => {
-      const mockPokemonCards = [];
+      const mockPokemonCards = [
+        { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' },
+        { id: 2, name: 'Bulbasaur', pokedexId: 1, typeId: 2, lifePoints: 45, size: 0.7, weight: 6.9, imageUrl: 'https://example.com/bulbasaur.png' },
+      ];
+      prismaMock.pokemonCard.findMany.mockResolvedValue(mockPokemonCards);
+      const response = await request(app).get('/pokemon-cards');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual(mockPokemonCards);
