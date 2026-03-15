@@ -1,6 +1,8 @@
 import request from 'supertest';
 import { app } from '../src';
 import { prismaMock } from './vitest.setup';
+import { describe, expect, it } from 'vitest';
+import { response } from 'express';
 
 describe('PokemonCard API', () => {
   describe('GET /pokemon-cards', () => {
@@ -19,13 +21,16 @@ describe('PokemonCard API', () => {
 
   describe('GET /pokemon-cards/:pokemonCardId', () => {
     it('should fetch a PokemonCard by ID', async () => {
-      const mockPokemonCard = {};
-
+      const mockPokemonCard = {id : 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      prismaMock.pokemonCard.findUnique.mockResolvedValue(mockPokemonCard);
+      const response = await request(app).get('/pokemon-cards/1');
       expect(response.status).toBe(200);
       expect(response.body).toEqual(mockPokemonCard);
     });
 
     it('should return 404 if PokemonCard is not found', async () => {
+      prismaMock.pokemonCard.findUnique.mockResolvedValue(null);
+      const response = await request(app).get('/pokemon-cards/unknown-id');
       expect(response.status).toBe(404);
       expect(response.body).toEqual({ error: 'PokemonCard not found' });
     });
