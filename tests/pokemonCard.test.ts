@@ -39,15 +39,25 @@ describe('PokemonCard API', () => {
       const response = await request(app).get('/pokemon-cards/unknown-id');
       expect(response.status).toBe(404);
     });
+
+    it('should return 500 if server error occurs', async () => {
+      prismaMock.pokemonCard.findUnique.mockRejectedValue(new Error('Database error'));
+      const response = await request(app).get('/pokemon-cards/1');
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({ error: 'Erreur lors de la récupération de la carte Pokémon.' });
+    });
   });
 
   describe('POST /pokemon-cards', () => {
+    beforeEach(() => {
+      prismaMock.pokemonCard.findUnique.mockResolvedValue(null);
+    });
+
     it('should create a new PokemonCard', async () => {
       const createdPokemonCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       const createInput = { name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
 
       prismaMock.type.findUnique.mockResolvedValue({ id: 1, name: 'Electric' });
-      prismaMock.pokemonCard.findUnique.mockResolvedValue(null);
       prismaMock.pokemonCard.create.mockResolvedValue(createdPokemonCard);
 
       const response = await request(app)
@@ -56,7 +66,6 @@ describe('PokemonCard API', () => {
         .send(createInput);
       expect(response.status).toBe(201);
       expect(response.body).toEqual(createdPokemonCard);
-
     });
 
     it('should return 400 if required fields are missing', async () => {
@@ -82,10 +91,12 @@ describe('PokemonCard API', () => {
       expect(response.body).toEqual({ error: 'Le type n\'existe pas' });
     });
 
-    it('should return 400 if name or pokedexId already exists', async () => {
+    it('should return 400 if name already exists', async () => {
       const createInput = { name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const existingCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+
       prismaMock.type.findUnique.mockResolvedValue({ id: 1, name: 'Electric' });
-      prismaMock.pokemonCard.findUnique.mockResolvedValue({ id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' });
+      prismaMock.pokemonCard.findUnique.mockResolvedValue(existingCard);
 
       const response = await request(app)
         .post('/pokemon-cards')
@@ -93,8 +104,21 @@ describe('PokemonCard API', () => {
         .send(createInput);
       expect(response.status).toBe(400);
       expect(response.body).toEqual({ error: 'Le nom ou le pokedexId de la carte Pokémon existe déjà' });
-     });
+    });
 
+    it('should return 500 if database error occurs', async () => {
+      const createInput = { name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+
+      prismaMock.type.findUnique.mockResolvedValue({ id: 1, name: 'Electric' });
+      prismaMock.pokemonCard.create.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .post('/pokemon-cards')
+        .set('Authorization', 'Bearer test-token')
+        .send(createInput);
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({ error: 'Erreur lors de la création de la carte Pokémon' });
+    });
   });
 
   describe('PATCH /pokemon-cards/:pokemonCardId', () => {
@@ -139,6 +163,53 @@ describe('PokemonCard API', () => {
         .send(updateInput);
       expect(response.status).toBe(400);
       expect(response.body).toEqual({ error: "Le type n'existe pas" });
+    });
+
+    it('should return 400 if name already exists', async () => {
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const existingCard = { id: 2, name: 'Bulbasaur', pokedexId: 1, typeId: 2, lifePoints: 45, size: 0.7, weight: 6.9, imageUrl: 'https://example.com/bulbasaur.png' };
+      const updateInput = { name: 'Bulbasaur' };
+
+      prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
+      prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(existingCard);
+
+      const response = await request(app)
+        .patch('/pokemon-cards/1')
+        .set('Authorization', 'Bearer test-token')
+        .send(updateInput);
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: 'Le nom de la carte Pokémon existe déjà' });
+    });
+
+    it('should return 400 if pokedexId already exists', async () => {
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const existingCard = { id: 2, name: 'Bulbasaur', pokedexId: 1, typeId: 2, lifePoints: 45, size: 0.7, weight: 6.9, imageUrl: 'https://example.com/bulbasaur.png' };
+      const updateInput = { pokedexId: 1 };
+
+      prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
+      prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(existingCard);
+
+      const response = await request(app)
+        .patch('/pokemon-cards/1')
+        .set('Authorization', 'Bearer test-token')
+        .send(updateInput);
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: 'Le pokedexId de la carte Pokémon existe déjà' });
+    });
+
+    it('should return 500 if database error occurs during update', async () => {
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const updateInput = { lifePoints: 40 };
+
+      prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
+      prismaMock.pokemonCard.update.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .patch('/pokemon-cards/1')
+        .set('Authorization', 'Bearer test-token')
+        .send(updateInput);
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({ error: 'Une erreur est surevenue lors de la modification de la carte Pokémon' });
     });
   });
 
