@@ -21,6 +21,27 @@ vi.mock('../src/common/auth.middleware', () => ({
     }),
 }))
 
+// Mock de bcrypt
+vi.mock('bcrypt', () => ({
+    default: {
+        hash: vi.fn().mockResolvedValue('hashedPassword'),
+        compare: vi.fn(async (password) => password === 'truePassword'),
+    },
+}))
+
+// Mock de jsonwebtoken
+vi.mock('jsonwebtoken', () => ({
+    default: {
+        sign: vi.fn().mockReturnValue('mockedToken'),
+        verify: vi.fn((token) => {
+            if (token === 'mockedToken') {
+                return { userId: 1, email: 'test@example.com' }
+            }
+            throw new Error('Invalid token')
+        }),
+    },
+}))
+
 
 // Reset des mocks avant chaque test
 beforeEach(() => {
