@@ -1,0 +1,252 @@
+openapi: 3.0.0
+info:
+  title: Pokemon API
+  version: 1.0.0
+  description: API pour gérer les cartes Pokémon et utilisateurs
+
+servers:
+  - url: http://localhost:3000
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PokemonCard:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        pokedexId:
+          type: integer
+        typeId:
+          type: integer
+        lifePoints:
+          type: integer
+        size:
+          type: number
+        weight:
+          type: number
+        imageUrl:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        token:
+          type: string
+        user:
+          type: object
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+paths:
+  /pokemon-cards:
+    get:
+      tags: [Pokemon Cards]
+      summary: Récupère toutes les cartes
+      responses:
+        "200":
+          description: Liste des cartes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PokemonCard"
+        "404":
+          description: Non trouvé
+
+    post:
+      tags: [Pokemon Cards]
+      summary: Crée une carte
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                pokedexId: {type: integer}
+                typeId: {type: integer}
+                lifePoints: {type: integer}
+                size: {type: number}
+                weight: {type: number}
+                imageUrl: {type: string}
+      responses:
+        "201": {description: Créée}
+        "400": {description: Erreur requête}
+        "401": {description: Non autorisé}
+
+  /pokemon-cards/{id}:
+    get:
+      tags: [Pokemon Cards]
+      summary: Récupère une carte
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200": {description: Carte trouvée, content: {application/json: {schema: {$ref: "#/components/schemas/PokemonCard"}}}}
+        "404": {description: Non trouvé}
+
+    patch:
+      tags: [Pokemon Cards]
+      summary: Modifie une carte
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                pokedexId: {type: integer}
+                typeId: {type: integer}
+                lifePoints: {type: integer}
+                size: {type: number}
+                weight: {type: number}
+                imageUrl: {type: string}
+      responses:
+        "200": {description: Modifiée}
+        "400": {description: Erreur}
+        "401": {description: Non autorisé}
+
+    delete:
+      tags: [Pokemon Cards]
+      summary: Supprime une carte
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200": {description: Supprimée}
+        "404": {description: Non trouvé}
+        "401": {description: Non autorisé}
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Récupère tous les utilisateurs
+      responses:
+        "200":
+          description: Liste des utilisateurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+    post:
+      tags: [Users]
+      summary: Crée un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: {type: string, format: email}
+                password: {type: string, format: password}
+      responses:
+        "201": {description: Créé}
+        "400": {description: Email déjà utilisé}
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Récupère un utilisateur
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200": {description: Utilisateur trouvé, content: {application/json: {schema: {$ref: "#/components/schemas/User"}}}}
+        "404": {description: Non trouvé}
+
+    patch:
+      tags: [Users]
+      summary: Modifie un utilisateur
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: {type: string, format: email}
+                password: {type: string, format: password}
+      responses:
+        "200": {description: Modifié}
+        "404": {description: Non trouvé}
+
+    delete:
+      tags: [Users]
+      summary: Supprime un utilisateur
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200": {description: Supprimé}
+        "404": {description: Non trouvé}
+
+  /users/login:
+    post:
+      tags: [Users]
+      summary: Authentifie un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: {type: string, format: email}
+                password: {type: string, format: password}
+      responses:
+        "200": {description: Connecté, content: {application/json: {schema: {$ref: "#/components/schemas/LoginResponse"}}}}
+        "401": {description: Identifiants incorrects}
