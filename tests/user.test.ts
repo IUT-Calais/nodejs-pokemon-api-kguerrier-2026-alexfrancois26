@@ -9,7 +9,7 @@ describe('User API', () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
     });
 
-    it('should create a new user', async () => {
+    it('create user', async () => {
       const createdUser = {
         id: 1,
         email: 'test@example.com',
@@ -26,7 +26,7 @@ describe('User API', () => {
       expect(response.body).toEqual(createdUser);
     });
 
-    it('should return 400 if email is missing', async () => {
+    it('get 400 if email missing', async () => {
       const response = await request(app)
         .post('/users')
         .send({ password: 'truePassword' });
@@ -35,7 +35,7 @@ describe('User API', () => {
       expect(response.body).toEqual({ error: 'Email et MDP sont requis' });
     });
 
-    it('should return 400 if password is missing', async () => {
+    it('get 400 if password missing', async () => {
       const response = await request(app)
         .post('/users')
         .send({ email: 'test@example.com' });
@@ -44,7 +44,7 @@ describe('User API', () => {
       expect(response.body).toEqual({ error: 'Email et MDP sont requis' });
     });
 
-    it('should return 400 if email already exists', async () => {
+    it('get 400 if email exists', async () => {
       const existingUser = {
         id: 1,
         email: 'test@example.com',
@@ -74,7 +74,7 @@ describe('User API', () => {
   });
 
   describe('POST /login', () => {
-    it('should login a user and return a token', async () => {
+    it('login user', async () => {
       const user = {
         id: 1,
         email: 'test@example.com',
@@ -99,7 +99,7 @@ describe('User API', () => {
       });
     });
 
-    it('should return 401 if user does not exist', async () => {
+    it('get 401 if not found', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
@@ -110,7 +110,7 @@ describe('User API', () => {
       expect(response.body).toEqual({ error: 'Email ou mot de passe incorrect' });
     });
 
-    it('should return 401 if password is incorrect', async () => {
+    it('get 401 if wrong password', async () => {
       const user = {
         id: 1,
         email: 'test@example.com',
@@ -140,7 +140,7 @@ describe('User API', () => {
   });
 
   describe('GET /users', () => {
-    it('should fetch all users', async () => {
+    it('get all users', async () => {
       const mockUsers = [
         { id: 1, email: 'user1@example.com' },
         { id: 2, email: 'user2@example.com' },
@@ -154,7 +154,7 @@ describe('User API', () => {
       expect(response.body).toEqual(mockUsers);
     });
 
-    it('should return 500 if database error occurs', async () => {
+    it('get 500 on db error', async () => {
       prismaMock.user.findMany.mockRejectedValue(new Error('Database error'));
 
       const response = await request(app).get('/users');
@@ -165,7 +165,7 @@ describe('User API', () => {
   });
 
   describe('GET /users/:id', () => {
-    it('should fetch a user by ID', async () => {
+    it('get user by id', async () => {
       const mockUser = { id: 1, email: 'test@example.com' };
 
       prismaMock.user.findUnique.mockResolvedValue(mockUser);
@@ -176,7 +176,7 @@ describe('User API', () => {
       expect(response.body).toEqual(mockUser);
     });
 
-    it('should return 404 if user does not exist', async () => {
+    it('get 404 if not found', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       const response = await request(app).get('/users/999');
@@ -185,7 +185,7 @@ describe('User API', () => {
       expect(response.body).toEqual({ error: "L'utilisateur n'existe pas" });
     });
 
-    it('should return 500 if database error occurs', async () => {
+    it('get 500 on db error', async () => {
       prismaMock.user.findUnique.mockRejectedValue(new Error('Database error'));
 
       const response = await request(app).get('/users/1');
@@ -196,7 +196,7 @@ describe('User API', () => {
   });
 
   describe('PATCH /users/:id', () => {
-    it('should update a user', async () => {
+    it('update user', async () => {
       const originalUser = { id: 1, email: 'old@example.com' };
       const updatedUser = { id: 1, email: 'new@example.com' };
 
@@ -211,7 +211,7 @@ describe('User API', () => {
       expect(response.body).toEqual(updatedUser);
     });
 
-    it('should return 404 if user does not exist', async () => {
+    it('get 404 if not found', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
@@ -222,7 +222,7 @@ describe('User API', () => {
       expect(response.body).toEqual({ error: "L'utilisateur n'existe pas" });
     });
 
-    it('should return 400 if new email already exists', async () => {
+    it('get 400 if email exists', async () => {
       const originalUser = { id: 1, email: 'old@example.com' };
       const existingUser = { id: 2, email: 'new@example.com' };
 
@@ -237,7 +237,7 @@ describe('User API', () => {
       expect(response.body).toEqual({ error: 'Cet email est déjà utilisé' });
     });
 
-    it('should return 500 if database error occurs', async () => {
+    it('get 500 on db error', async () => {
       const originalUser = { id: 1, email: 'old@example.com' };
 
       prismaMock.user.findUnique.mockResolvedValueOnce(originalUser);
@@ -250,10 +250,40 @@ describe('User API', () => {
       expect(response.status).toBe(500);
       expect(response.body).toEqual({ error: "Erreur lors de la modification de l'utilisateur" });
     });
+
+    it('update password only', async () => {
+      const originalUser = { id: 1, email: 'test@example.com', password: 'oldHashedPassword' };
+      const updatedUser = { id: 1, email: 'test@example.com', password: 'newHashedPassword' };
+
+      prismaMock.user.findUnique.mockResolvedValueOnce(originalUser);
+      prismaMock.user.update.mockResolvedValue(updatedUser);
+
+      const response = await request(app)
+        .patch('/users/1')
+        .send({ password: 'newPassword' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(updatedUser);
+    });
+
+    it('update email and password', async () => {
+      const originalUser = { id: 1, email: 'old@example.com', password: 'oldHashedPassword' };
+      const updatedUser = { id: 1, email: 'new@example.com', password: 'newHashedPassword' };
+
+      prismaMock.user.findUnique.mockResolvedValueOnce(originalUser);
+      prismaMock.user.update.mockResolvedValue(updatedUser);
+
+      const response = await request(app)
+        .patch('/users/1')
+        .send({ email: 'new@example.com', password: 'newPassword' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(updatedUser);
+    });
   });
 
   describe('DELETE /users/:id', () => {
-    it('should delete a user', async () => {
+    it('delete user', async () => {
       const deletedUser = { id: 1, email: 'test@example.com' };
 
       prismaMock.user.delete.mockResolvedValue(deletedUser);
@@ -264,7 +294,7 @@ describe('User API', () => {
       expect(response.body).toEqual(deletedUser);
     });
 
-    it('should return 500 if user does not exist', async () => {
+    it('get 500 if not found', async () => {
       prismaMock.user.delete.mockRejectedValue(new Error('Record to delete does not exist'));
 
       const response = await request(app).delete('/users/999');

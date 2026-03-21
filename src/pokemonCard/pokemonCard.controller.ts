@@ -148,6 +148,7 @@ export const deletedPokemonCard = async (req: Request, res: Response) => {
         });
         if (!deleted) {
             res.status(404).send("La carte Pokémon n'a pas été trouvée");
+            return;
         }
         res.status(200).send(deleted);
     } catch (error) {
