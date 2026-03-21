@@ -329,7 +329,7 @@ describe('PokemonCard API', () => {
         .delete('/pokemon-cards/1')
         .set('Authorization', 'Bearer test-token')
         .catch(() => {
-          // Error expected - just covering line 154
+        
         });
     });
   });

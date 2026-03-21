@@ -36,7 +36,7 @@ describe('Index', () => {
       expect.stringContaining('🚀 Serveur lancé sur')
     );
     
-    // Call stopServer to cover lines 32-33
+
     module.stopServer();
     
     consoleSpy.mockRestore();
@@ -44,7 +44,7 @@ describe('Index', () => {
 
   it('handle stopServer when no server', async () => {
     const { stopServer } = await import('../src/index.js');
-    // Call stopServer without a server (should not throw)
+
     expect(() => stopServer()).not.toThrow();
   });
 });
