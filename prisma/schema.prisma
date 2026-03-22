@@ -10,15 +10,18 @@ datasource db {
 model Type {
   id   Int    @id @default(autoincrement())
   name String @unique
-  pokemonCards PokemonCard[] 
+  pokemonTypes PokemonCard[] @relation(name: "pokemonType")
+  pokemonWeaknesses PokemonCard[] @relation(name: "pokemonWeakness")
 }
 
 model PokemonCard {
   id Int @id @default(autoincrement()) // Identifiant unique de la carte 
   name String @unique // Nom du pokémon
   pokedexId Int @unique // Identifiant du pokémon dans le Pokédex
-  type Type @relation(fields: [typeId], references: [id]) // Type du pokémon (relation 1-N)
+  type Type @relation(name: "pokemonType", fields: [typeId], references: [id]) // Type du pokémon (relation 1-N)
   typeId Int // Clé étrangère vers le type
+  weaknessType Type? @relation(name: "pokemonWeakness", fields: [weaknessTypeId], references: [id]) // Type contre lequel le pokémon est faible
+  weaknessTypeId Int? // Clé étrangère optionnelle vers le type de faiblesse
   lifePoints Int // Points de vie 
   size Float? // taille
   weight Float? // poids

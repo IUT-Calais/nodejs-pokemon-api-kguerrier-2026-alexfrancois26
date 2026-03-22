@@ -1,14 +1,14 @@
 import request from 'supertest';
 import { app } from '../src';
 import { prismaMock } from './vitest.setup';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('PokemonCard API', () => {
   describe('GET /pokemon-cards', () => {
     it('get all cards', async () => {
       const mockPokemonCards = [
-        { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' },
-        { id: 2, name: 'Bulbasaur', pokedexId: 1, typeId: 2, lifePoints: 45, size: 0.7, weight: 6.9, imageUrl: 'https://example.com/bulbasaur.png' },
+        { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' },
+        { id: 2, name: 'Bulbasaur', pokedexId: 1, typeId: 2, weaknessTypeId: null, lifePoints: 45, size: 0.7, weight: 6.9, imageUrl: 'https://example.com/bulbasaur.png' },
       ];
       prismaMock.pokemonCard.findMany.mockResolvedValue(mockPokemonCards);
       const response = await request(app).get('/pokemon-cards');
@@ -33,7 +33,7 @@ describe('PokemonCard API', () => {
 
   describe('GET /pokemon-cards/:pokemonCardId', () => {
     it('get card by id', async () => {
-      const mockPokemonCard = {id : 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const mockPokemonCard = {id : 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       prismaMock.pokemonCard.findUnique.mockResolvedValue(mockPokemonCard);
       const response = await request(app).get('/pokemon-cards/1');
       expect(response.status).toBe(200);
@@ -60,7 +60,7 @@ describe('PokemonCard API', () => {
     });
 
     it('create card', async () => {
-      const createdPokemonCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const createdPokemonCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       const createInput = { name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
 
       prismaMock.type.findUnique.mockResolvedValue({ id: 1, name: 'Electric' });
@@ -97,9 +97,38 @@ describe('PokemonCard API', () => {
       expect(response.body).toEqual({ error: 'Le type n\'existe pas' });
     });
 
+    it('create card with weakness', async () => {
+      const createdPokemonCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: 3, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const createInput = { name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: 3, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+
+      prismaMock.type.findUnique.mockResolvedValueOnce({ id: 1, name: 'Electric' });
+      prismaMock.type.findUnique.mockResolvedValueOnce({ id: 3, name: 'Ground' });
+      prismaMock.pokemonCard.create.mockResolvedValue(createdPokemonCard);
+
+      const response = await request(app)
+        .post('/pokemon-cards')
+        .set('Authorization', 'Bearer test-token')
+        .send(createInput);
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual(createdPokemonCard);
+    });
+
+    it('get 400 if weakness type invalid', async () => {
+      const createInput = { name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: 999, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      prismaMock.type.findUnique.mockResolvedValueOnce({ id: 1, name: 'Electric' });
+      prismaMock.type.findUnique.mockResolvedValueOnce(null);
+
+      const response = await request(app)
+        .post('/pokemon-cards')
+        .set('Authorization', 'Bearer test-token')
+        .send(createInput);
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: 'Le type de faiblesse n\'existe pas' });
+    });
+
     it('get 400 if name exists', async () => {
       const createInput = { name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
-      const existingCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const existingCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
 
       prismaMock.type.findUnique.mockResolvedValue({ id: 1, name: 'Electric' });
       prismaMock.pokemonCard.findUnique.mockResolvedValue(existingCard);
@@ -129,8 +158,8 @@ describe('PokemonCard API', () => {
 
   describe('PATCH /pokemon-cards/:pokemonCardId', () => {
     it('update card', async () => {
-      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
-      const updatedPokemonCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 40, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const updatedPokemonCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 40, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       const updateInput = { lifePoints: 40 };
 
       prismaMock.pokemonCard.findUnique.mockResolvedValue(originalCard);
@@ -157,7 +186,7 @@ describe('PokemonCard API', () => {
     });
 
     it('get 400 if type invalid', async () => {
-      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       const updateInput = { typeId: 999 };
 
       prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
@@ -172,8 +201,8 @@ describe('PokemonCard API', () => {
     });
 
     it('update typeId', async () => {
-      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
-      const updatedCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 2, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const updatedCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 2, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       const updateInput = { typeId: 2 };
 
       prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
@@ -189,8 +218,8 @@ describe('PokemonCard API', () => {
     });
 
     it('get 400 if name exists', async () => {
-      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
-      const existingCard = { id: 2, name: 'Bulbasaur', pokedexId: 1, typeId: 2, lifePoints: 45, size: 0.7, weight: 6.9, imageUrl: 'https://example.com/bulbasaur.png' };
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const existingCard = { id: 2, name: 'Bulbasaur', pokedexId: 1, typeId: 2, weaknessTypeId: null, lifePoints: 45, size: 0.7, weight: 6.9, imageUrl: 'https://example.com/bulbasaur.png' };
       const updateInput = { name: 'Bulbasaur' };
 
       prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
@@ -205,8 +234,8 @@ describe('PokemonCard API', () => {
     });
 
     it('update different name', async () => {
-      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
-      const updatedCard = { id: 1, name: 'NewName', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const updatedCard = { id: 1, name: 'NewName', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       const updateInput = { name: 'NewName' };
 
       prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
@@ -222,7 +251,7 @@ describe('PokemonCard API', () => {
     });
 
     it('update same name', async () => {
-      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       const updateInput = { name: 'Pikachu' };
 
       prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
@@ -237,8 +266,8 @@ describe('PokemonCard API', () => {
     });
 
     it('get 400 if pokedexId exists', async () => {
-      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
-      const existingCard = { id: 2, name: 'Bulbasaur', pokedexId: 1, typeId: 2, lifePoints: 45, size: 0.7, weight: 6.9, imageUrl: 'https://example.com/bulbasaur.png' };
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const existingCard = { id: 2, name: 'Bulbasaur', pokedexId: 1, typeId: 2, weaknessTypeId: null, lifePoints: 45, size: 0.7, weight: 6.9, imageUrl: 'https://example.com/bulbasaur.png' };
       const updateInput = { pokedexId: 1 };
 
       prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
@@ -253,8 +282,8 @@ describe('PokemonCard API', () => {
     });
 
     it('update different pokedexId', async () => {
-      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
-      const updatedCard = { id: 1, name: 'Pikachu', pokedexId: 50, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const updatedCard = { id: 1, name: 'Pikachu', pokedexId: 50, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       const updateInput = { pokedexId: 50 };
 
       prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
@@ -270,7 +299,7 @@ describe('PokemonCard API', () => {
     });
 
     it('update same pokedexId', async () => {
-      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       const updateInput = { pokedexId: 25 };
 
       prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
@@ -284,8 +313,40 @@ describe('PokemonCard API', () => {
       expect(response.body).toEqual(originalCard);
     });
 
+    it('update weaknessTypeId', async () => {
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const updatedCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: 3, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const updateInput = { weaknessTypeId: 3 };
+
+      prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
+      prismaMock.type.findUnique.mockResolvedValue({ id: 3, name: 'Ground' });
+      prismaMock.pokemonCard.update.mockResolvedValue(updatedCard);
+
+      const response = await request(app)
+        .patch('/pokemon-cards/1')
+        .set('Authorization', 'Bearer test-token')
+        .send(updateInput);
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(updatedCard);
+    });
+
+    it('get 400 if weakness type invalid on update', async () => {
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const updateInput = { weaknessTypeId: 999 };
+
+      prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
+      prismaMock.type.findUnique.mockResolvedValue(null);
+
+      const response = await request(app)
+        .patch('/pokemon-cards/1')
+        .set('Authorization', 'Bearer test-token')
+        .send(updateInput);
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: 'Le type de faiblesse n\'existe pas' });
+    });
+
     it('get 500 on db error', async () => {
-      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const originalCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       const updateInput = { lifePoints: 40 };
 
       prismaMock.pokemonCard.findUnique.mockResolvedValueOnce(originalCard);
@@ -302,7 +363,7 @@ describe('PokemonCard API', () => {
 
   describe('DELETE /pokemon-cards/:pokemonCardId', () => {
     it('delete card', async () => {
-      const deletedCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
+      const deletedCard = { id: 1, name: 'Pikachu', pokedexId: 25, typeId: 1, weaknessTypeId: null, lifePoints: 35, size: 0.4, weight: 6.0, imageUrl: 'https://example.com/pikachu.png' };
       
       prismaMock.pokemonCard.delete.mockResolvedValue(deletedCard);
 

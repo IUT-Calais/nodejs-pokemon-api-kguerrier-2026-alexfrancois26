@@ -19,8 +19,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 export let server: any;
 if (process.env.NODE_ENV !== 'test') {
   server = app.listen(port);
-  console.log(`🚀 Serveur lancé sur http://localhost:${port}`);
-  console.log(`📚 Documentation Swagger disponible sur http://localhost:${port}/api-docs`);
+  console.log(`Serveur lancé sur http://localhost:${port}`);
+  console.log(`Documentation Swagger disponible sur http://localhost:${port}/api-docs`);
 }
 
 app.use('/pokemon-cards', pokemonCardRouter);

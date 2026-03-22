@@ -33,7 +33,7 @@ describe('Index', () => {
     
     expect(module.server).toBeDefined();
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('🚀 Serveur lancé sur')
+      expect.stringContaining('Serveur lancé sur')
     );
     
 

@@ -32,7 +32,7 @@ export const getPokemonCardId = async (req: Request, res: Response) => {
 };
 
 export const createPokemonCard = async (req: Request, res: Response) => {
-    const { name, pokedexId, typeId, lifePoints, size, weight, imageUrl } = req.body;
+    const { name, pokedexId, typeId, lifePoints, size, weight, imageUrl, weaknessTypeId } = req.body;
     try {
         if (!name || !pokedexId || !typeId || !lifePoints) {
             res.status(400).send({ error: "Les champs name, pokedexId, typeId et lifePoints sont obligatoires" });
@@ -56,20 +56,30 @@ export const createPokemonCard = async (req: Request, res: Response) => {
             res.status(400).send({ error: "Le nom ou le pokedexId de la carte Pokémon existe déjà" });
             return;
         }
-        else {
-            const newCard = await prisma.pokemonCard.create({
-                data: {
-                    name,
-                    pokedexId,
-                    typeId,
-                    lifePoints,
-                    size,
-                    weight,
-                    imageUrl
-                }
+        
+        if (weaknessTypeId) {
+            const weaknessType = await prisma.type.findUnique({
+                where: { id: weaknessTypeId }
             });
-            res.status(201).send( newCard);
+            if (!weaknessType) {
+                res.status(400).send({ error: "Le type de faiblesse n'existe pas" });
+                return;
+            }
         }
+        
+        const newCard = await prisma.pokemonCard.create({
+            data: {
+                name,
+                pokedexId,
+                typeId,
+                lifePoints,
+                size,
+                weight,
+                imageUrl,
+                weaknessTypeId
+            }
+        });
+        res.status(201).send( newCard);
     }
     catch (error) {
         res.status(500).send({ error: "Erreur lors de la création de la carte Pokémon" });
@@ -80,7 +90,7 @@ export const createPokemonCard = async (req: Request, res: Response) => {
 
 export const editPokemonCard = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, pokedexId, typeId, lifePoints, size, weight, imageUrl } = req.body;
+    const { name, pokedexId, typeId, lifePoints, size, weight, imageUrl, weaknessTypeId } = req.body;
     try {
         const card = await prisma.pokemonCard.findUnique({
             where: { id: Number(id) }
@@ -99,6 +109,17 @@ export const editPokemonCard = async (req: Request, res: Response) => {
                 return;
             }
         }
+        
+        if (weaknessTypeId) {
+            const weaknessType = await prisma.type.findUnique({
+                where: { id: weaknessTypeId }
+            });
+            if (!weaknessType) {
+                res.status(400).send({ error: "Le type de faiblesse n'existe pas" });
+                return;
+            }
+        }
+        
         if (name && name !== card.name) {
             const namePoke = await prisma.pokemonCard.findUnique({
                 where: { name: name }
@@ -127,7 +148,8 @@ export const editPokemonCard = async (req: Request, res: Response) => {
                 lifePoints: lifePoints,
                 size: size,
                 weight: weight,
-                imageUrl: imageUrl
+                imageUrl: imageUrl,
+                weaknessTypeId: weaknessTypeId
             }
         });
         res.status(200).send(edit);
